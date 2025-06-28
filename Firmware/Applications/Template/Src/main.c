@@ -4,6 +4,7 @@
 #include "debug_log.h"
 #include "FreeRTOS.h"
 #include "main.h"
+#include "bh1750fvi.h"
 
 
 
@@ -14,11 +15,7 @@
 */
 static void appInit(void *arg)
 {
-   // add user defined init code
-
-    return;
-
-
+   return;
 }
 
 /**
