@@ -648,7 +648,7 @@ void HAL_I2C_MasterTransmit_Polling(I2C_HandleTypeDef *hi2c, uint32_t addr, cons
     
     reg_value = (((addr << 1) & (I2C_SCR_TARGET_SLAVE_ADDR_Msk)) | ((size - 1) << I2C_SCR_BYTE_NUM_Pos) | I2C_SCR_START_Msk);
     hi2c->reg->SCR = reg_value;
-
+    printf("Config and issue command\n");
     // Send data
     while(i < size) {
         
@@ -664,7 +664,7 @@ void HAL_I2C_MasterTransmit_Polling(I2C_HandleTypeDef *hi2c, uint32_t addr, cons
         hi2c->reg->TDR = pTxData[i];
         i++;
     }
-
+    printf("Send data\n");
     // Wait for ACK/NACK
     do {
         ret = HAL_I2C_MasterCheckStatus(hi2c);
@@ -679,7 +679,7 @@ void HAL_I2C_MasterTransmit_Polling(I2C_HandleTypeDef *hi2c, uint32_t addr, cons
 
     hi2c->reg->IER = 0;
     hi2c->ctrl->status.busy = 0;
-
+printf("// Wait for ACK/NACK\n");
 }
 #if 0 //not implemented yet
 int32_t HAL_I2C_MasterReceive_DMA(I2C_HandleTypeDef *hi2c, uint32_t addr, uint8_t *pRxData, uint32_t size)  {
