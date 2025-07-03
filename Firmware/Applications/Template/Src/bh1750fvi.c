@@ -11,16 +11,6 @@ static uint8_t current_mode;          /*current mode of operation: POWER_DOWN, P
 static uint8_t auto_or_manual;        /*automatic or manual resolution selecting indicator: AUTOMATIC_RESOLUTION and MANUAL_RESOLUTION*/
 static uint8_t continuous_or_onetime; /*CONTINUOUS_METER or ONE_TIME_METER indicator*/
 
-/*struct delay_time {
-  uint16_t continuous_h_1 = CONTINUOUS_H_1_DELAY_DEFAULT;
-  uint16_t continuous_h_2 = CONTINUOUS_H_2_DELAY_DEFAULT;
-  uint16_t continuous_l = CONTINUOUS_L_DELAY_DEFAULT;
-  uint16_t one_time_h_1 = ONE_TIME_H_1_DELAY_DEFAULT;
-  uint16_t one_time_h_2 = ONE_TIME_H_2_DELAY_DEFAULT;
-  uint16_t one_time_l = ONE_TIME_L_DELAY_DEFAULT;
-} delay_time;
-*/
-
 struct delay_time
 {
   uint16_t continuous_h_1;
@@ -47,13 +37,9 @@ static void lightSensor_automaticResolutionSet(uint16_t meter_value);
 void lightSensor_begin(uint8_t address, uint8_t mode_of_operation)
 {
   bh1750_I2C_init();
-  printf("Init I2C\n");
   sensor_address = address;
-  printf("add\n");
   lightSensor_mode(POWER_DOWN);
-  printf("Sending POWER_DOWN\n");
   lightSensor_mode(RESET);
-  printf("Sending RESET\n");
   switch (mode_of_operation)
   {
   case CONTINUOUS_AUTO:
@@ -220,19 +206,3 @@ static void lightSensor_automaticResolutionSet(uint16_t meter_value)
   }
 }
 
-/*=========================================
-TASK PARA LEITURA DO SENSOR DE LUMINOSIDADE
-===========================================*/
-
-void BH1750_Task(void *arg)
-{
-  printf("Chamou...\n");
-  lightSensor_begin(ADDRESS1,CONTINUOUS_AUTO);
-
-  while (1)
-  {
-    uint16_t lux = lightSensor_meter();
-    printf("Luminosidade: %u lux\n", lux);
-    vTaskDelay(pdMS_TO_TICKS(1000));
-  }
-}

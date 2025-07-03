@@ -3,7 +3,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-//extern I2C_HandleTypeDef hi2c0;
 
 /*BH1750FVI C Driver*/
 /*Reza Ebrahimi - https://github.com/ebrezadev"*/
@@ -11,8 +10,8 @@
 #ifndef BH1750FVI_H
 #define BH1750FVI_H
 
-#define ADDRESS1                          0x23 //(0x23 << 1)       /*address pin not connected*/
-#define ADDRESS2                         //(0x5C << 1)       /*address pin high*/
+#define ADDRESS1                         0x23 //(0x23 << 1)       /*address pin not connected*/
+#define ADDRESS2                              //(0x5C << 1)       /*address pin high*/
 
 #define LIMIT1                            10          /*anything below LIMIT1 is H2 mode*/      
 #define LIMIT2                            1000        /*anything between LIMIT1 and LIMIT2 is H1 mode, above LIMIT2 is L mode*/

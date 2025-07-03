@@ -4,9 +4,11 @@
 #include "debug_log.h"
 #include "FreeRTOS.h"
 #include "main.h"
-
 #include "bh1750fvi.h"
+
 extern USART_HandleTypeDef huart1;
+
+void BH1750_Task(void *arg);
 
 
 /**
@@ -40,4 +42,22 @@ void main_entry(void)
     osKernelStart();
   }
   while (1);
+}
+
+
+
+/*=========================================
+TASK PARA LEITURA DO SENSOR DE LUMINOSIDADE
+===========================================*/
+
+void BH1750_Task(void *arg)
+{
+  lightSensor_begin(ADDRESS1,CONTINUOUS_AUTO);
+
+  while (1)
+  {
+    uint16_t lux = lightSensor_meter();
+    printf("Luminosidade: %u lux\n", lux);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
 }
