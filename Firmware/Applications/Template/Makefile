@@ -34,7 +34,8 @@ CFLAGS_INC        +=  -I Inc
 obj-y             += Src/main.o \
                      Src/HT_BSP_Custom.o\
                      Src/bh1750fvi.o\
-                     Src/bh1750fvi_low_level.o
+                     Src/bh1750fvi_low_level.o\
+                     Src/ReedSwitch.o
 
 include $(TOP)/SDK/PLAT/tools/scripts/Makefile.rules
 

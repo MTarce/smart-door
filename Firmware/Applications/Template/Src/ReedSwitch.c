@@ -1,0 +1,45 @@
+
+#include "ReedSwitch.h"
+
+#include <stdio.h>
+
+#include <pad_qcx212.h>
+#include <HT_gpio_qcx212.h>
+
+#define SAMPLES 32000
+
+// GPIO02 - ReedSwitch
+#define REED_SWITCH_INSTANCE 0               /**</ REED_SWITCH pin instance. */
+#define REED_SWITCH_PIN 2                    /**</ REED_SWITCH pin number. */
+#define REED_SWITCH_PAD_ID 13                /**</ REED_SWITCH Pad ID. */
+#define REED_SWITCH_PAD_ALT_FUNC PAD_MuxAlt0 /**</ Button pin alternate function. */
+
+void ReedSwitchInit(void)
+{
+        GPIO_InitType GPIO_InitStruct = {0};
+        GPIO_InitStruct.af = PAD_MuxAlt0;
+        GPIO_InitStruct.pad_id = REED_SWITCH_PAD_ID;
+        GPIO_InitStruct.gpio_pin = REED_SWITCH_PIN;
+        GPIO_InitStruct.pin_direction = GPIO_DirectionInput;
+        GPIO_InitStruct.pull = PAD_InternalPullUp;
+        GPIO_InitStruct.instance = REED_SWITCH_INSTANCE;
+        GPIO_InitStruct.interrupt_config = GPIO_InterruptDisabled;
+
+        HT_GPIO_Init(&GPIO_InitStruct);
+}
+
+ReadState ReedSwitchGetState(void)
+{
+        uint32_t filter = 0;
+        for (int i = 0; i < SAMPLES; i++)
+        {
+                filter += HT_GPIO_PinRead(REED_SWITCH_INSTANCE, REED_SWITCH_PIN);
+        }
+        filter /= SAMPLES;
+
+        if (filter == 1)
+        {
+                return kOpen;
+        }
+        return kClose;
+}

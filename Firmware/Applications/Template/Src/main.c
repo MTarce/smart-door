@@ -5,6 +5,8 @@
 #include "FreeRTOS.h"
 #include "main.h"
 #include "bh1750fvi.h"
+#include "ReedSwitch.h"
+
 
 extern USART_HandleTypeDef huart1;
 
@@ -47,17 +49,19 @@ void main_entry(void)
 
 
 /*=========================================
-TASK PARA LEITURA DO SENSOR DE LUMINOSIDADE
+TASK PARA LEITURA DO SENSOR DE LUMINOSIDADEqu
 ===========================================*/
 
 void BH1750_Task(void *arg)
 {
-  lightSensor_begin(ADDRESS1,CONTINUOUS_AUTO);
+  ReedSwitchInit();
+  //lightSensor_begin(ADDRESS1,CONTINUOUS_AUTO);
 
   while (1)
   {
-    uint16_t lux = lightSensor_meter();
-    printf("Luminosidade: %u lux\n", lux);
-    vTaskDelay(pdMS_TO_TICKS(500));
+    ReedSwitchGetState();
+    // uint16_t lux = lightSensor_meter();
+    // printf("Luminosidade: %u lux\n", lux);
+    // vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
