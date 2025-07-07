@@ -1,3 +1,4 @@
+#include <stdint.h>
 
 #pragma once 
 
@@ -8,4 +9,8 @@ typedef enum {
 void ReedSwitchInit(void);
 
 ReadState ReedSwitchGetState(void);
+
+uint8_t ChangeState(void);
+
+
 

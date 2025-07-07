@@ -5,6 +5,8 @@
 
 #include <pad_qcx212.h>
 #include <HT_gpio_qcx212.h>
+#include <FreeRTOS.h>
+#include <task.h>
 
 #define SAMPLES 32000
 
@@ -16,30 +18,50 @@
 
 void ReedSwitchInit(void)
 {
-        GPIO_InitType GPIO_InitStruct = {0};
-        GPIO_InitStruct.af = PAD_MuxAlt0;
-        GPIO_InitStruct.pad_id = REED_SWITCH_PAD_ID;
-        GPIO_InitStruct.gpio_pin = REED_SWITCH_PIN;
-        GPIO_InitStruct.pin_direction = GPIO_DirectionInput;
-        GPIO_InitStruct.pull = PAD_InternalPullUp;
-        GPIO_InitStruct.instance = REED_SWITCH_INSTANCE;
-        GPIO_InitStruct.interrupt_config = GPIO_InterruptDisabled;
+    GPIO_InitType GPIO_InitStruct = {0};
+    GPIO_InitStruct.af = PAD_MuxAlt0;
+    GPIO_InitStruct.pad_id = REED_SWITCH_PAD_ID;
+    GPIO_InitStruct.gpio_pin = REED_SWITCH_PIN;
+    GPIO_InitStruct.pin_direction = GPIO_DirectionInput;
+    GPIO_InitStruct.pull = PAD_InternalPullUp;
+    GPIO_InitStruct.instance = REED_SWITCH_INSTANCE;
+    GPIO_InitStruct.interrupt_config = GPIO_InterruptDisabled;
 
-        HT_GPIO_Init(&GPIO_InitStruct);
+    HT_GPIO_Init(&GPIO_InitStruct);
 }
 
 ReadState ReedSwitchGetState(void)
 {
-        uint32_t filter = 0;
-        for (int i = 0; i < SAMPLES; i++)
-        {
-                filter += HT_GPIO_PinRead(REED_SWITCH_INSTANCE, REED_SWITCH_PIN);
-        }
-        filter /= SAMPLES;
+    uint32_t filter = 0;
+    for (int i = 0; i < SAMPLES; i++)
+    {
+        filter += HT_GPIO_PinRead(REED_SWITCH_INSTANCE, REED_SWITCH_PIN);
+    }
+    filter /= SAMPLES;
+    if (filter == 1)
+    {
+        return kOpen;
+    }
+    return kClose;
+}
 
-        if (filter == 1)
+uint8_t ChangeState(void)
+{
+    static uint8_t estadoAnterior = 0;
+    uint8_t estadoAtual = ReedSwitchGetState();
+
+    if (estadoAtual != estadoAnterior)
+    {
+        if (estadoAnterior == 0 && estadoAtual == 1)
         {
-                return kOpen;
+            printf("OPEN\n");
         }
-        return kClose;
+        else if (estadoAnterior == 1 && estadoAtual == 0)
+        {
+            printf("CLOSE\n");
+        }
+        estadoAnterior = estadoAtual;
+    }
+    vTaskDelay(pdMS_TO_TICKS(500));
+    return estadoAtual;
 }

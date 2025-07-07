@@ -7,11 +7,9 @@
 #include "bh1750fvi.h"
 #include "ReedSwitch.h"
 
-
 extern USART_HandleTypeDef huart1;
 
 void BH1750_Task(void *arg);
-
 
 /**
   \fn          static void appInit(void *arg)
@@ -20,7 +18,7 @@ void BH1750_Task(void *arg);
 */
 static void appInit(void *arg)
 {
-  xTaskCreate(BH1750_Task,"BH1750",512,NULL,2,NULL);
+  xTaskCreate(BH1750_Task, "BH1750", 512, NULL, 2, NULL);
 }
 
 /**
@@ -37,16 +35,14 @@ void main_entry(void)
 
   osKernelInitialize();
   registerAppEntry(appInit, NULL);
-  
-  
+
   if (osKernelGetState() == osKernelReady)
   {
     osKernelStart();
   }
-  while (1);
+  while (1)
+    ;
 }
-
-
 
 /*=========================================
 TASK PARA LEITURA DO SENSOR DE LUMINOSIDADEqu
@@ -55,13 +51,14 @@ TASK PARA LEITURA DO SENSOR DE LUMINOSIDADEqu
 void BH1750_Task(void *arg)
 {
   ReedSwitchInit();
-  //lightSensor_begin(ADDRESS1,CONTINUOUS_AUTO);
+  // lightSensor_begin(ADDRESS1,CONTINUOUS_AUTO);
 
   while (1)
   {
-    ReedSwitchGetState();
+    printf ("Mudou: %u\n",ChangeState());
     // uint16_t lux = lightSensor_meter();
     // printf("Luminosidade: %u lux\n", lux);
     // vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
+
