@@ -42,9 +42,27 @@
 #include "MQTTClient.h"
 #include "uart_qcx212.h"
 
-#define MQTT_TLS_ENABLE 1
+#define MQTT_TLS_ENABLE 0
 
 #define MQTT_GENERAL_TIMEOUT 60000
+
+/* Defines  ------------------------------------------------------------------*/
+#define HT_MQTT_KEEP_ALIVE_INTERVAL 240                   /**</ Keep alive interval in ms. */
+#define HT_MQTT_VERSION 4                                 /**</ MQTT protocol version. */
+
+#if MQTT_TLS_ENABLE == 1
+#define HT_MQTT_PORT   8883                               /**</ MQTT TCP TLS port. */
+#else
+#define HT_MQTT_PORT   1883                               /**</ MQTT TCP port. */
+#endif
+
+#define HT_MQTT_SEND_TIMEOUT 60000                        /**</ MQTT TX timeout. */
+#define HT_MQTT_RECEIVE_TIMEOUT   60000                   /**</ MQTT RX timeout. */
+#define HT_MQTT_BUFFER_SIZE 1024                          /**</ Maximum MQTT buffer size. */
+#define HT_SUBSCRIBE_BUFF_SIZE  6                         /**</ Maximum buffer size to received from MQTT subscribe. */
+
+/* Typedefs  ------------------------------------------------------------------*/
+
 
 /* Functions ------------------------------------------------------------------*/
 

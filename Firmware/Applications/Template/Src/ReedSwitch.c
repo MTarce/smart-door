@@ -1,5 +1,5 @@
-
 #include "ReedSwitch.h"
+#include "HT_MQTT_Api.h"
 
 #include <stdio.h>
 
@@ -9,6 +9,29 @@
 #include <task.h>
 
 #define SAMPLES 32000
+
+/*------MQTT-----*/
+static MQTTClient mqttClient;
+static Network mqttNetwork;
+
+//Buffer that will be published.
+static uint8_t mqttSendbuf[HT_MQTT_BUFFER_SIZE] = {0};
+static uint8_t mqttReadbuf[HT_MQTT_BUFFER_SIZE] = {0};
+
+static const char clientID[] = {"SIP_HTNB32L-XXX"};
+static const char username[] = {""};
+static const char password[] = {""};
+
+// MQTT Topics to subscribe
+char topic_led_1[] = {"hana/rafael/htnb32l_led_1"};
+char topic_led_2[] = {"hana/rafael/htnb32l_led_2"};
+char topic_led_3[] = {"hana/rafael/htnb32l_led_3"};
+
+// MQTT Topics to Publish
+char topic_button_1[] = {"hana/rafael/htnb32l_button_1"};
+char topic_button_2[] = {"hana/rafael/htnb32l_button_2"};
+char topic_ldr[] = {"hana/rafael/htnb32l_ldr_value"};
+
 
 // GPIO02 - ReedSwitch
 #define REED_SWITCH_INSTANCE 0               /**</ REED_SWITCH pin instance. */
@@ -65,3 +88,4 @@ uint8_t ChangeState(void)
     vTaskDelay(pdMS_TO_TICKS(500));
     return estadoAtual;
 }
+
