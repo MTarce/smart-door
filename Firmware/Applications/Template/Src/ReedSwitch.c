@@ -22,15 +22,30 @@ static const char clientID[] = {"SIP_HTNB32L-XXX"};
 static const char username[] = {""};
 static const char password[] = {""};
 
+//MQTT broker host address
+static const char addr[] = {"131.255.82.115"};
+
 // MQTT Topics to subscribe
-char topic_led_1[] = {"hana/rafael/htnb32l_led_1"};
-char topic_led_2[] = {"hana/rafael/htnb32l_led_2"};
-char topic_led_3[] = {"hana/rafael/htnb32l_led_3"};
+char topic_buzzer[] = {"hana/smartdoor/buzzer"};
 
 // MQTT Topics to Publish
-char topic_button_1[] = {"hana/rafael/htnb32l_button_1"};
-char topic_button_2[] = {"hana/rafael/htnb32l_button_2"};
-char topic_ldr[] = {"hana/rafael/htnb32l_ldr_value"};
+char topic_light[] = {"hana/smartdoor/light"};
+char topic_door[] = {"hana/smartdoor/door"};
+
+//Buffers
+static uint8_t subscribed_payload[HT_SUBSCRIBE_BUFF_SIZE] = {0}; // PayLoad Recebida
+static uint8_t subscribed_topic[255] = {0};
+volatile MessageData recieved_msg = {0};
+
+static void HT_YieldThread(void *arg);
+
+
+static void HT_YieldThread(void *arg) {
+    while (1) {
+        // Wait function for 10ms to check if some message arrived in subscribed topic
+        MQTTYield(&mqttClient, 10);
+    }
+}
 
 
 // GPIO02 - ReedSwitch
