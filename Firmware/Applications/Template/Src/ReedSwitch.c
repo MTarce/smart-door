@@ -47,6 +47,22 @@ static void HT_YieldThread(void *arg) {
     }
 }
 
+static void HT_Yield_Thread_Start(void *arg) {
+    osThreadAttr_t task_attr;
+
+    memset(&task_attr,0,sizeof(task_attr));
+    memset(yieldTaskStack, 0xA5,LED_TASK_STACK_SIZE);
+    task_attr.name = "yield_thread";
+    task_attr.stack_mem = yieldTaskStack;
+    task_attr.stack_size = LED_TASK_STACK_SIZE;
+    task_attr.priority = osPriorityNormal;
+    task_attr.cb_mem = &yield_thread;
+    task_attr.cb_size = sizeof(StaticTask_t);
+
+    osThreadNew(HT_YieldThread, NULL, &task_attr);
+}
+
+
 
 // GPIO02 - ReedSwitch
 #define REED_SWITCH_INSTANCE 0               /**</ REED_SWITCH pin instance. */

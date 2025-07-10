@@ -3,6 +3,15 @@
 /*===========================================================
 Inicio - Configuração de rede 
 =============================================================*/
+
+static uint8_t gImsi[16] = {0}; // código do sim
+static uint32_t gCellID = 0;    // Identificador da célula NB-IoT
+static NmAtiSyncRet gNetworkInfo; // Informações de IP, rede, et.
+
+static volatile uint8_t simReady = 0; // Flag para verificar SIM card
+
+trace_add_module(APP, P_INFO);
+
 static void HT_SetConnectioParameters(void)
 {
     uint8_t cid = 0;
@@ -12,7 +21,7 @@ static void HT_SetConnectioParameters(void)
     uint8_t bandNum = 1;
     uint8_t band = 28;
 
-    ret = appSetBandModeSync(networkMode, bandNum, &band);
+    ret = appSetBandModeSync(networkMode, bandNum, &band); // Conf Banda de operação NB-IoT
     if (ret == CMS_RET_SUCC)
     {
         printf("SetBand Result: %d\n", ret);
@@ -24,6 +33,59 @@ static void HT_SetConnectioParameters(void)
     apnSetting.pdnType = CMI_PS_PDN_TYPE_IP_V4V6;
     ret = appSetAPNSettingSync(&apnSetting, &cid);
 }
+
+//Callback principal para eventos da rede NB-IoT
+static INT32 registerPSUrcCallback(urcID_t eventID, void *param, uint32_t paramLen) {
+    CmiSimImsiStr *imsi = NULL;
+    CmiPsCeregInd *cereg = NULL;
+    UINT8 rssi = 0;
+    NmAtiNetifInfo *netif = NULL;
+
+    switch(eventID)
+    {
+        case NB_URC_ID_SIM_READY: //SIM está funcional
+        {
+            imsi = (CmiSimImsiStr *)param;
+            memcpy(gImsi, imsi->contents, imsi->length);
+            simReady = 1;
+            break;
+        }
+        case NB_URC_ID_MM_SIGQ: //Nível de sinal RSSI
+        {
+            rssi = *(UINT8 *)param;
+            HT_TRACE(UNILOG_MQTT, mqttAppTask81, P_INFO, 1, "RSSI signal=%d", rssi);
+            break;
+        }
+        case NB_URC_ID_PS_BEARER_ACTED: //Ativação da conexao
+        {
+            HT_TRACE(UNILOG_MQTT, mqttAppTask82, P_INFO, 0, "Default bearer activated");
+            break;
+        }
+        case NB_URC_ID_PS_BEARER_DEACTED: //desativação da conexao
+        {
+            HT_TRACE(UNILOG_MQTT, mqttAppTask83, P_INFO, 0, "Default bearer Deactivated");
+            break;
+        }
+        case NB_URC_ID_PS_CEREG_CHANGED: // ID da célula mudou
+        {
+            cereg = (CmiPsCeregInd *)param;
+            gCellID = cereg->celId;
+            HT_TRACE(UNILOG_MQTT, mqttAppTask84, P_INFO, 4, "CEREG changed act:%d celId:%d locPresent:%d tac:%d", cereg->act, cereg->celId, cereg->locPresent, cereg->tac);
+            break;
+        }
+        case NB_URC_ID_PS_NETINFO: // Rede conectada, dispara evento NW_IPV4_READY
+        {
+            netif = (NmAtiNetifInfo *)param;
+            if (netif->netStatus == NM_NETIF_ACTIVATED)
+                sendQueueMsg(QMSG_ID_NW_IPV4_READY, 0);
+            break;
+        }
+
+        default:
+            break;
+    }
+    return 0;
+}
 /*===========================================================
 Fim - Configuração de rede 
 =============================================================*/
@@ -31,6 +93,8 @@ Fim - Configuração de rede
 /*===========================================================
 Inicio - Funções para uso do MQTT
 =============================================================*/
+
+static uint8_t mqttEpSlpHandler = 0xff; // Para Sleep Management
 
 extern volatile uint8_t subscribe_callback;
 
