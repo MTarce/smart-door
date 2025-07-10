@@ -37,9 +37,13 @@ static uint8_t subscribed_payload[HT_SUBSCRIBE_BUFF_SIZE] = {0}; // PayLoad Rece
 static uint8_t subscribed_topic[255] = {0};
 volatile MessageData recieved_msg = {0};
 
+static StaticTask_t yield_thread;
+static uint8_t yieldTaskStack[1024*4];
+
 static void HT_YieldThread(void *arg);
 
 
+// para manter a conexão MQTT ativa
 static void HT_YieldThread(void *arg) {
     while (1) {
         // Wait function for 10ms to check if some message arrived in subscribed topic
@@ -51,16 +55,17 @@ static void HT_Yield_Thread_Start(void *arg) {
     osThreadAttr_t task_attr;
 
     memset(&task_attr,0,sizeof(task_attr));
-    memset(yieldTaskStack, 0xA5,LED_TASK_STACK_SIZE);
+    memset(yieldTaskStack, 0xA5,(1024*4));
     task_attr.name = "yield_thread";
     task_attr.stack_mem = yieldTaskStack;
-    task_attr.stack_size = LED_TASK_STACK_SIZE;
+    task_attr.stack_size = (1024*4);
     task_attr.priority = osPriorityNormal;
     task_attr.cb_mem = &yield_thread;
     task_attr.cb_size = sizeof(StaticTask_t);
 
     osThreadNew(HT_YieldThread, NULL, &task_attr);
 }
+
 
 
 

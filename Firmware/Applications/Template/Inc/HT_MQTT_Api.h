@@ -61,6 +61,17 @@
 #define HT_MQTT_BUFFER_SIZE 1024                          /**</ Maximum MQTT buffer size. */
 #define HT_SUBSCRIBE_BUFF_SIZE  6                         /**</ Maximum buffer size to received from MQTT subscribe. */
 
+
+/**
+ * \enum HT_ConnectionStatus
+ * \brief HTNB32L-XXX connection status.
+ */
+typedef enum {
+    HT_CONNECTED = 0,
+    HT_NOT_CONNECTED
+} HT_ConnectionStatus;
+
+
 /* Typedefs  ------------------------------------------------------------------*/
 
 #define QMSG_ID_BASE               (0x160) 

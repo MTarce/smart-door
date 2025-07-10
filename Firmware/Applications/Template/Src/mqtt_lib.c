@@ -3,6 +3,7 @@
 /*===========================================================
 Inicio - Configuração de rede 
 =============================================================*/
+static QueueHandle_t psEventQueueHandle;
 
 static uint8_t gImsi[16] = {0}; // código do sim
 static uint32_t gCellID = 0;    // Identificador da célula NB-IoT
@@ -86,6 +87,96 @@ static INT32 registerPSUrcCallback(urcID_t eventID, void *param, uint32_t paramL
     }
     return 0;
 }
+
+
+//DEVE SER EXECUTADO PRIMEIRO PARA INICIAR A REDE NB-IoT E EM SEGUIDA DO O MQTT
+
+static void NbiotMqttInit(void *arg){
+    int32_t ret;
+    uint8_t psmMode = 0, actType = 0;
+    uint16_t tac = 0;
+    uint32_t tauTime = 0, activeTime = 0, cellID = 0, nwEdrxValueMs = 0, nwPtwMs = 0;
+
+    eventCallbackMessage_t *queueItem = NULL;
+
+    registerPSEventCallback(NB_GROUP_ALL_MASK, registerPSUrcCallback);
+    psEventQueueHandle = xQueueCreate(APP_EVENT_QUEUE_SIZE, sizeof(eventCallbackMessage_t*));
+    if (psEventQueueHandle == NULL)
+    {
+        HT_TRACE(UNILOG_MQTT, mqttAppTask0, P_INFO, 0, "psEventQueue create error!");
+        return;
+    }
+
+    slpManApplyPlatVoteHandle("EP_MQTT",&mqttEpSlpHandler);
+    slpManPlatVoteDisableSleep(mqttEpSlpHandler, SLP_ACTIVE_STATE); //SLP_SLP2_STATE 
+    HT_TRACE(UNILOG_MQTT, mqttAppTask1, P_INFO, 0, "first time run mqtt example");
+
+    //HAL_USART_InitPrint(&huart1, GPR_UART1ClkSel_26M, uart_cntrl, 115200);
+    // printf("HTNB32L-XXX MQTT Example!\n");
+    printf("Antes do while(!simReady)...\n");
+
+    while(!simReady);
+    HT_SetConnectioParameters();
+
+    while (1)
+    {
+        if (xQueueReceive(psEventQueueHandle, &queueItem, portMAX_DELAY))
+        {
+            switch(queueItem->messageId)
+            {
+                case QMSG_ID_NW_IPV4_READY:
+                case QMSG_ID_NW_IPV6_READY:
+                case QMSG_ID_NW_IPV4_6_READY:
+                    appGetImsiNumSync((CHAR *)gImsi);
+                    HT_STRING(UNILOG_MQTT, mqttAppTask2, P_SIG, "IMSI = %s", gImsi);
+                
+                    appGetNetInfoSync(gCellID, &gNetworkInfo);
+                    if ( NM_NET_TYPE_IPV4 == gNetworkInfo.body.netInfoRet.netifInfo.ipType)
+                        HT_TRACE(UNILOG_MQTT, mqttAppTask3, P_INFO, 4,"IP:\"%u.%u.%u.%u\"", ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[0],
+                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[1],
+                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[2],
+                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[3]);
+                    ret = appGetLocationInfoSync(&tac, &cellID);
+                    HT_TRACE(UNILOG_MQTT, mqttAppTask4, P_INFO, 3, "tac=%d, cellID=%d ret=%d", tac, cellID, ret);
+                    // edrxModeValue = CMI_MM_ENABLE_EDRX_AND_ENABLE_IND;
+                    // actType = CMI_MM_EDRX_NB_IOT;
+                    actType = CMI_MM_EDRX_NO_ACT_OR_NOT_USE_EDRX;
+                    //reqEdrxValueMs = 20480;
+                    ret = appSetEDRXSettingSync(CMI_MM_DISABLE_EDRX, actType, 0);
+                    ret = appGetEDRXSettingSync(&actType, &nwEdrxValueMs, &nwPtwMs);
+                    HT_TRACE(UNILOG_MQTT, mqttAppTask5, P_INFO, 4, "actType=%d, nwEdrxValueMs=%d nwPtwMs=%d ret=%d", actType, nwEdrxValueMs, nwPtwMs, ret);
+                    printf("actType=%d, nwEdrxValueMs=%d nwPtwMs=%d ret=%d\n", actType, nwEdrxValueMs, nwPtwMs, ret);
+
+                    psmMode = 0;
+                    tauTime = 0;
+                    activeTime = 0;
+
+                    {
+                        appSetPSMSettingSync(psmMode, tauTime, activeTime);
+                        appGetPSMSettingSync(&psmMode, &tauTime, &activeTime);
+                        HT_TRACE(UNILOG_MQTT, mqttAppTask6, P_INFO, 3, "Get PSM info mode=%d, TAU=%d, ActiveTime=%d", psmMode, tauTime, activeTime);
+                        printf("Get PSM info mode=%d, TAU=%d, ActiveTime=%d\n", psmMode, tauTime, activeTime);
+                    }
+
+                    HT_Fsm();
+
+                    break;
+                case QMSG_ID_NW_DISCONNECT:
+                    printf("NB Disconected\n");
+                    break;
+
+                default:
+                    break;
+            }
+            free(queueItem);
+        }
+        osDelay(pdMS_TO_TICKS(10));
+    }
+
+}
+
+
+
 /*===========================================================
 Fim - Configuração de rede 
 =============================================================*/
