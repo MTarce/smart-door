@@ -6,11 +6,11 @@
 #include "main.h"
 #include "bh1750fvi.h"
 #include "ReedSwitch.h"
+#include "HT_MQTT_Api.h"
 
 extern USART_HandleTypeDef huart1;
 
 void BH1750_Task(void *arg);
-void NbiotMqttInit(void *arg);
 
 /**
   \fn          static void appInit(void *arg)
@@ -19,9 +19,10 @@ void NbiotMqttInit(void *arg);
 */
 static void appInit(void *arg)
 {
-  //xTaskCreate(BH1750_Task, "BH1750", 512, NULL, 2, NULL);
-  //xTaskCreate(ReedSwitch_Task, "BH1750", 512, NULL, 2, NULL);
+  xTaskCreate(BH1750_Task, "BH1750", 512, NULL, 2, NULL);
+  xTaskCreate(ReedSwitch_Task, "BH1750", 512, NULL, 2, NULL);
   xTaskCreate(NbiotMqttInit, "NbiotMqttInit", 512, NULL, 2, NULL);
+
 }
 
 /**

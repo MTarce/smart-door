@@ -159,6 +159,10 @@ void HT_MQTT_SubscribeCallback(MessageData *msg);
  *******************************************************************/
 void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos);
 
+void HT_FSM_SetSubscribeBuff(MessageData *msg);
+void HT_Fsm(void);
+void NbiotMqttInit(void *arg);
+
 #endif /* __HT_MQTT_API_H__ */
 
 /************************ HT Micron Semicondutores S.A *****END OF FILE****/

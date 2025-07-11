@@ -88,95 +88,6 @@ static INT32 registerPSUrcCallback(urcID_t eventID, void *param, uint32_t paramL
     return 0;
 }
 
-
-//DEVE SER EXECUTADO PRIMEIRO PARA INICIAR A REDE NB-IoT E EM SEGUIDA DO O MQTT
-
-static void NbiotMqttInit(void *arg){
-    int32_t ret;
-    uint8_t psmMode = 0, actType = 0;
-    uint16_t tac = 0;
-    uint32_t tauTime = 0, activeTime = 0, cellID = 0, nwEdrxValueMs = 0, nwPtwMs = 0;
-
-    eventCallbackMessage_t *queueItem = NULL;
-
-    registerPSEventCallback(NB_GROUP_ALL_MASK, registerPSUrcCallback);
-    psEventQueueHandle = xQueueCreate(APP_EVENT_QUEUE_SIZE, sizeof(eventCallbackMessage_t*));
-    if (psEventQueueHandle == NULL)
-    {
-        HT_TRACE(UNILOG_MQTT, mqttAppTask0, P_INFO, 0, "psEventQueue create error!");
-        return;
-    }
-
-    slpManApplyPlatVoteHandle("EP_MQTT",&mqttEpSlpHandler);
-    slpManPlatVoteDisableSleep(mqttEpSlpHandler, SLP_ACTIVE_STATE); //SLP_SLP2_STATE 
-    HT_TRACE(UNILOG_MQTT, mqttAppTask1, P_INFO, 0, "first time run mqtt example");
-
-    //HAL_USART_InitPrint(&huart1, GPR_UART1ClkSel_26M, uart_cntrl, 115200);
-    // printf("HTNB32L-XXX MQTT Example!\n");
-    printf("Antes do while(!simReady)...\n");
-
-    while(!simReady);
-    HT_SetConnectioParameters();
-
-    while (1)
-    {
-        if (xQueueReceive(psEventQueueHandle, &queueItem, portMAX_DELAY))
-        {
-            switch(queueItem->messageId)
-            {
-                case QMSG_ID_NW_IPV4_READY:
-                case QMSG_ID_NW_IPV6_READY:
-                case QMSG_ID_NW_IPV4_6_READY:
-                    appGetImsiNumSync((CHAR *)gImsi);
-                    HT_STRING(UNILOG_MQTT, mqttAppTask2, P_SIG, "IMSI = %s", gImsi);
-                
-                    appGetNetInfoSync(gCellID, &gNetworkInfo);
-                    if ( NM_NET_TYPE_IPV4 == gNetworkInfo.body.netInfoRet.netifInfo.ipType)
-                        HT_TRACE(UNILOG_MQTT, mqttAppTask3, P_INFO, 4,"IP:\"%u.%u.%u.%u\"", ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[0],
-                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[1],
-                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[2],
-                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[3]);
-                    ret = appGetLocationInfoSync(&tac, &cellID);
-                    HT_TRACE(UNILOG_MQTT, mqttAppTask4, P_INFO, 3, "tac=%d, cellID=%d ret=%d", tac, cellID, ret);
-                    // edrxModeValue = CMI_MM_ENABLE_EDRX_AND_ENABLE_IND;
-                    // actType = CMI_MM_EDRX_NB_IOT;
-                    actType = CMI_MM_EDRX_NO_ACT_OR_NOT_USE_EDRX;
-                    //reqEdrxValueMs = 20480;
-                    ret = appSetEDRXSettingSync(CMI_MM_DISABLE_EDRX, actType, 0);
-                    ret = appGetEDRXSettingSync(&actType, &nwEdrxValueMs, &nwPtwMs);
-                    HT_TRACE(UNILOG_MQTT, mqttAppTask5, P_INFO, 4, "actType=%d, nwEdrxValueMs=%d nwPtwMs=%d ret=%d", actType, nwEdrxValueMs, nwPtwMs, ret);
-                    printf("actType=%d, nwEdrxValueMs=%d nwPtwMs=%d ret=%d\n", actType, nwEdrxValueMs, nwPtwMs, ret);
-
-                    psmMode = 0;
-                    tauTime = 0;
-                    activeTime = 0;
-
-                    {
-                        appSetPSMSettingSync(psmMode, tauTime, activeTime);
-                        appGetPSMSettingSync(&psmMode, &tauTime, &activeTime);
-                        HT_TRACE(UNILOG_MQTT, mqttAppTask6, P_INFO, 3, "Get PSM info mode=%d, TAU=%d, ActiveTime=%d", psmMode, tauTime, activeTime);
-                        printf("Get PSM info mode=%d, TAU=%d, ActiveTime=%d\n", psmMode, tauTime, activeTime);
-                    }
-
-                    HT_Fsm();
-
-                    break;
-                case QMSG_ID_NW_DISCONNECT:
-                    printf("NB Disconected\n");
-                    break;
-
-                default:
-                    break;
-            }
-            free(queueItem);
-        }
-        osDelay(pdMS_TO_TICKS(10));
-    }
-
-}
-
-
-
 /*===========================================================
 Fim - Configuração de rede 
 =============================================================*/
@@ -287,6 +198,92 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
     return 0;
 }
 
+//DEVE SER EXECUTADO PRIMEIRO PARA INICIAR A REDE NB-IoT E EM SEGUIDA DO O MQTT
+
+void NbiotMqttInit(void *arg){
+    int32_t ret;
+    uint8_t psmMode = 0, actType = 0;
+    uint16_t tac = 0;
+    uint32_t tauTime = 0, activeTime = 0, cellID = 0, nwEdrxValueMs = 0, nwPtwMs = 0;
+
+    eventCallbackMessage_t *queueItem = NULL;
+
+    registerPSEventCallback(NB_GROUP_ALL_MASK, registerPSUrcCallback);
+    psEventQueueHandle = xQueueCreate(APP_EVENT_QUEUE_SIZE, sizeof(eventCallbackMessage_t*));
+    if (psEventQueueHandle == NULL)
+    {
+        HT_TRACE(UNILOG_MQTT, mqttAppTask0, P_INFO, 0, "psEventQueue create error!");
+        return;
+    }
+
+    slpManApplyPlatVoteHandle("EP_MQTT",&mqttEpSlpHandler);
+    slpManPlatVoteDisableSleep(mqttEpSlpHandler, SLP_ACTIVE_STATE); //SLP_SLP2_STATE 
+    HT_TRACE(UNILOG_MQTT, mqttAppTask1, P_INFO, 0, "first time run mqtt example");
+
+    //HAL_USART_InitPrint(&huart1, GPR_UART1ClkSel_26M, uart_cntrl, 115200);
+    // printf("HTNB32L-XXX MQTT Example!\n");
+    printf("Antes do while(!simReady)...\n");
+
+    while(!simReady);
+    HT_SetConnectioParameters();
+
+    while (1)
+    {
+        if (xQueueReceive(psEventQueueHandle, &queueItem, portMAX_DELAY))
+        {
+            switch(queueItem->messageId)
+            {
+                case QMSG_ID_NW_IPV4_READY:
+                case QMSG_ID_NW_IPV6_READY:
+                case QMSG_ID_NW_IPV4_6_READY:
+                    appGetImsiNumSync((CHAR *)gImsi);
+                    HT_STRING(UNILOG_MQTT, mqttAppTask2, P_SIG, "IMSI = %s", gImsi);
+                
+                    appGetNetInfoSync(gCellID, &gNetworkInfo);
+                    if ( NM_NET_TYPE_IPV4 == gNetworkInfo.body.netInfoRet.netifInfo.ipType)
+                        HT_TRACE(UNILOG_MQTT, mqttAppTask3, P_INFO, 4,"IP:\"%u.%u.%u.%u\"", ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[0],
+                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[1],
+                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[2],
+                                                                      ((UINT8 *)&gNetworkInfo.body.netInfoRet.netifInfo.ipv4Info.ipv4Addr.addr)[3]);
+                    ret = appGetLocationInfoSync(&tac, &cellID);
+                    HT_TRACE(UNILOG_MQTT, mqttAppTask4, P_INFO, 3, "tac=%d, cellID=%d ret=%d", tac, cellID, ret);
+                    // edrxModeValue = CMI_MM_ENABLE_EDRX_AND_ENABLE_IND;
+                    // actType = CMI_MM_EDRX_NB_IOT;
+                    actType = CMI_MM_EDRX_NO_ACT_OR_NOT_USE_EDRX;
+                    //reqEdrxValueMs = 20480;
+                    ret = appSetEDRXSettingSync(CMI_MM_DISABLE_EDRX, actType, 0);
+                    ret = appGetEDRXSettingSync(&actType, &nwEdrxValueMs, &nwPtwMs);
+                    HT_TRACE(UNILOG_MQTT, mqttAppTask5, P_INFO, 4, "actType=%d, nwEdrxValueMs=%d nwPtwMs=%d ret=%d", actType, nwEdrxValueMs, nwPtwMs, ret);
+                    printf("actType=%d, nwEdrxValueMs=%d nwPtwMs=%d ret=%d\n", actType, nwEdrxValueMs, nwPtwMs, ret);
+
+                    psmMode = 0;
+                    tauTime = 0;
+                    activeTime = 0;
+
+                    {
+                        appSetPSMSettingSync(psmMode, tauTime, activeTime);
+                        appGetPSMSettingSync(&psmMode, &tauTime, &activeTime);
+                        HT_TRACE(UNILOG_MQTT, mqttAppTask6, P_INFO, 3, "Get PSM info mode=%d, TAU=%d, ActiveTime=%d", psmMode, tauTime, activeTime);
+                        printf("Get PSM info mode=%d, TAU=%d, ActiveTime=%d\n", psmMode, tauTime, activeTime);
+                    }
+
+                    HT_Fsm();
+
+                    break;
+                case QMSG_ID_NW_DISCONNECT:
+                    printf("NB Disconected\n");
+                    break;
+
+                default:
+                    break;
+            }
+            free(queueItem);
+        }
+        osDelay(pdMS_TO_TICKS(10));
+    }
+
+}
+
 
 void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uint32_t len, enum QoS qos, uint8_t retained, uint16_t id, uint8_t dup)
 {
@@ -305,7 +302,7 @@ void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uin
 
 
 void HT_MQTT_SubscribeCallback(MessageData *msg) {
-    printf("Subscribe received: %s\n", msg->message->payload);
+    printf("Subscribe recebido: %s\n", msg->message->payload);
 
     subscribe_callback = 1;
     HT_FSM_SetSubscribeBuff(msg);
@@ -316,4 +313,86 @@ void HT_MQTT_SubscribeCallback(MessageData *msg) {
 void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos) {
     MQTTSubscribe(mqtt_client, (const char *)topic, qos, HT_MQTT_SubscribeCallback);
 }
+
+
+/*------MQTT-----*/
+static MQTTClient mqttClient;
+static Network mqttNetwork;
+
+//Buffer that will be published.
+static uint8_t mqttSendbuf[HT_MQTT_BUFFER_SIZE] = {0};
+static uint8_t mqttReadbuf[HT_MQTT_BUFFER_SIZE] = {0};
+
+static const char clientID[] = {"SIP_HTNB32L-XXX"};
+static const char username[] = {""};
+static const char password[] = {""};
+
+//MQTT broker host address
+static const char addr[] = {"131.255.82.115"};
+
+// MQTT Topics to subscribe
+char topic_buzzer[] = {"hana/smartdoor/buzzer"};
+
+// MQTT Topics to Publish
+char topic_light[] = {"hana/smartdoor/light"};
+char topic_door[] = {"hana/smartdoor/door"};
+
+//Buffers
+static uint8_t subscribed_payload[HT_SUBSCRIBE_BUFF_SIZE] = {0}; // PayLoad Recebida
+static uint8_t subscribed_topic[255] = {0};
+volatile MessageData recieved_msg = {0};
+
+static StaticTask_t yield_thread;
+static uint8_t yieldTaskStack[1024*4];
+
+static void HT_Yield_Task(void *arg);
+
+// para manter a conexão MQTT ativa
+static void HT_Yield_Task(void *arg) {
+    while (1) {
+        // Wait function for 10ms to check if some message arrived in subscribed topic
+        MQTTYield(&mqttClient, 10);
+    }
+}
+
+
+static HT_ConnectionStatus HT_FSM_MQTTConnect(void) {
+
+    // Connect to MQTT Broker using client, network and parameters needded. 
+    if(HT_MQTT_Connect(&mqttClient, &mqttNetwork, (char *)addr, HT_MQTT_PORT, HT_MQTT_SEND_TIMEOUT, HT_MQTT_RECEIVE_TIMEOUT,
+                (char *)clientID, (char *)username, (char *)password, HT_MQTT_VERSION, HT_MQTT_KEEP_ALIVE_INTERVAL, mqttSendbuf, HT_MQTT_BUFFER_SIZE, mqttReadbuf, HT_MQTT_BUFFER_SIZE)) {
+        return HT_NOT_CONNECTED;   
+    }
+    return HT_CONNECTED;
+}
+
+static void HT_FSM_Topic_Subscribe(void) {
+    
+    HT_MQTT_Subscribe(&mqttClient, topic_buzzer, QOS0);
+    printf("Subscribe Done!\n");
+}
+
+void HT_FSM_SetSubscribeBuff(MessageData *msg) {
+    memset(subscribed_payload, 0, HT_SUBSCRIBE_BUFF_SIZE);
+    memset(subscribed_topic, 0, strlen((char *)subscribed_topic));
+    memcpy(subscribed_payload, msg->message->payload, msg->message->payloadlen);
+    memcpy(subscribed_topic, msg->topicName->lenstring.data, msg->topicName->lenstring.len);
+}
+
+//Chama as Tasks
+void HT_Fsm(void) {
+
+    // Initialize MQTT Client and Connect to MQTT Broker defined in global variables
+    if(HT_FSM_MQTTConnect() == HT_NOT_CONNECTED) {
+        printf("\n MQTT Connection Error!\n");
+        while(1);
+    }
+    printf("MQTT Connection Success!\n");
+    
+    HT_FSM_Topic_Subscribe();
+
+    HT_Yield_Thread_Start(NULL);
+
+}
+
 
