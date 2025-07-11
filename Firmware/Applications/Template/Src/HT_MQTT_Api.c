@@ -9,6 +9,9 @@ static uint8_t gImsi[16] = {0}; // código do sim
 static uint32_t gCellID = 0;    // Identificador da célula NB-IoT
 static NmAtiSyncRet gNetworkInfo; // Informações de IP, rede, et.
 
+//Subcribe callback flag
+volatile uint8_t subscribe_callback = 0;
+
 static volatile uint8_t simReady = 0; // Flag para verificar SIM card
 
 trace_add_module(APP, P_INFO);
@@ -34,6 +37,20 @@ static void HT_SetConnectioParameters(void)
     apnSetting.pdnType = CMI_PS_PDN_TYPE_IP_V4V6;
     ret = appSetAPNSettingSync(&apnSetting, &cid);
 }
+
+static void sendQueueMsg(uint32_t msgId, uint32_t xTickstoWait) {
+    eventCallbackMessage_t *queueMsg = NULL;
+    queueMsg = malloc(sizeof(eventCallbackMessage_t));
+    queueMsg->messageId = msgId;
+    if (psEventQueueHandle)
+    {
+        if (pdTRUE != xQueueSend(psEventQueueHandle, &queueMsg, xTickstoWait))
+        {
+            HT_TRACE(UNILOG_MQTT, mqttAppTask80, P_INFO, 0, "xQueueSend error");
+        }
+    }
+}
+
 
 //Callback principal para eventos da rede NB-IoT
 static INT32 registerPSUrcCallback(urcID_t eventID, void *param, uint32_t paramLen) {
@@ -98,7 +115,6 @@ Inicio - Funções para uso do MQTT
 
 static uint8_t mqttEpSlpHandler = 0xff; // Para Sleep Management
 
-extern volatile uint8_t subscribe_callback;
 
 static MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
@@ -342,13 +358,11 @@ static uint8_t subscribed_payload[HT_SUBSCRIBE_BUFF_SIZE] = {0}; // PayLoad Rece
 static uint8_t subscribed_topic[255] = {0};
 volatile MessageData recieved_msg = {0};
 
-static StaticTask_t yield_thread;
-static uint8_t yieldTaskStack[1024*4];
 
-static void HT_Yield_Task(void *arg);
+static void HT_Yield_Task(void);
 
 // para manter a conexão MQTT ativa
-static void HT_Yield_Task(void *arg) {
+static void HT_Yield_Task(void) {
     while (1) {
         // Wait function for 10ms to check if some message arrived in subscribed topic
         MQTTYield(&mqttClient, 10);
@@ -391,7 +405,7 @@ void HT_Fsm(void) {
     
     HT_FSM_Topic_Subscribe();
 
-    HT_Yield_Thread_Start(NULL);
+    HT_Yield_Task();
 
 }
 

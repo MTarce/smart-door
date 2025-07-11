@@ -4,6 +4,7 @@
 
 #include <pad_qcx212.h>
 #include <HT_gpio_qcx212.h>
+#include <FreeRTOS.h>
 #include <task.h>
 
 #define SAMPLES 32000

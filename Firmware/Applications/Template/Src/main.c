@@ -19,8 +19,8 @@ void BH1750_Task(void *arg);
 */
 static void appInit(void *arg)
 {
-  xTaskCreate(BH1750_Task, "BH1750", 512, NULL, 2, NULL);
-  xTaskCreate(ReedSwitch_Task, "BH1750", 512, NULL, 2, NULL);
+  //xTaskCreate(BH1750_Task, "BH1750", 512, NULL, 2, NULL);
+  //xTaskCreate(ReedSwitch_Task, "BH1750", 512, NULL, 2, NULL);
   xTaskCreate(NbiotMqttInit, "NbiotMqttInit", 512, NULL, 2, NULL);
 
 }

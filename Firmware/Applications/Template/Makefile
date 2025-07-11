@@ -36,7 +36,7 @@ obj-y             += Src/main.o \
                      Src/bh1750fvi.o\
                      Src/bh1750fvi_low_level.o\
                      Src/ReedSwitch.o\
-                     Src/mqtt_lib.o
+                     Src/HT_MQTT_Api.o
 
 include $(TOP)/SDK/PLAT/tools/scripts/Makefile.rules
 
