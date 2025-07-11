@@ -15,6 +15,7 @@ volatile uint8_t subscribe_callback = 0;
 static volatile uint8_t simReady = 0; // Flag para verificar SIM card
 
 trace_add_module(APP, P_INFO);
+extern void mqtt_demo_onenet(void);
 
 static void HT_SetConnectioParameters(void)
 {
@@ -236,9 +237,6 @@ void NbiotMqttInit(void *arg){
     slpManPlatVoteDisableSleep(mqttEpSlpHandler, SLP_ACTIVE_STATE); //SLP_SLP2_STATE 
     HT_TRACE(UNILOG_MQTT, mqttAppTask1, P_INFO, 0, "first time run mqtt example");
 
-    //HAL_USART_InitPrint(&huart1, GPR_UART1ClkSel_26M, uart_cntrl, 115200);
-    // printf("HTNB32L-XXX MQTT Example!\n");
-    printf("Antes do while(!simReady)...\n");
 
     while(!simReady);
     HT_SetConnectioParameters();
@@ -344,7 +342,7 @@ static const char username[] = {""};
 static const char password[] = {""};
 
 //MQTT broker host address
-static const char addr[] = {"131.255.82.115"};
+static const char addr[] = {"test.mosquitto.org"};
 
 // MQTT Topics to subscribe
 char topic_buzzer[] = {"hana/smartdoor/buzzer"};
