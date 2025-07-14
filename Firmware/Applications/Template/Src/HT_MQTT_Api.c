@@ -200,20 +200,117 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
                 mqtt_client->ping_outstanding = 0;
             }
         }
-
-        if (mqtt_client->ping_outstanding == 0)
-        {
-            if ((MQTTStartRECVTask(mqtt_client)) != SUCCESS)
-            {
-                return 1;
-            }
-        }
     }
 
 #endif
 
     return 0;
 }
+
+void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uint32_t len, enum QoS qos, uint8_t retained, uint16_t id, uint8_t dup)
+{
+    MQTTMessage message;
+
+    message.qos = qos;
+    message.retained = retained;
+    message.id = id;
+    message.dup = dup;
+    message.payload = payload;
+    message.payloadlen = len;
+
+    MQTTPublish(mqtt_client, topic, &message);
+}
+
+
+void HT_MQTT_SubscribeCallback(MessageData *msg) {
+    printf("Subscribe recebido: %s\n", msg->message->payload);
+
+    subscribe_callback = 1;
+    HT_FSM_SetSubscribeBuff(msg);
+
+    memset(msg->message->payload, 0, msg->message->payloadlen);
+}
+
+void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos) {
+    MQTTSubscribe(mqtt_client, (const char *)topic, qos, HT_MQTT_SubscribeCallback);
+}
+
+void HT_Yield_Task(void *arg);
+
+/*------MQTT-----*/
+MQTTClient mqttClient;
+static Network mqttNetwork;
+
+//Buffer that will be published.
+static uint8_t mqttSendbuf[HT_MQTT_BUFFER_SIZE] = {0};
+static uint8_t mqttReadbuf[HT_MQTT_BUFFER_SIZE] = {0};
+
+static const char clientID[] = {"SIP_HTNB32L-XXX"};
+static const char username[] = {""};
+static const char password[] = {""};
+
+//MQTT broker host address
+static const char addr[] = {"test.mosquitto.org"};
+
+// MQTT Topics to subscribe
+char topic_buzzer[] = {"hana/mesanino/smartdoor/buzzer"};
+
+// MQTT Topics to Publish
+char topic_light[] = {"hana/mesanino/smartdoor/lux"};
+char topic_door[] = {"hana/mesanino/smartdoor/door"};
+
+//Buffers
+static uint8_t subscribed_payload[HT_SUBSCRIBE_BUFF_SIZE] = {0}; // PayLoad Recebida
+static uint8_t subscribed_topic[255] = {0};
+volatile MessageData recieved_msg = {0};
+
+static HT_ConnectionStatus HT_FSM_MQTTConnect(void) {
+
+    // Connect to MQTT Broker using client, network and parameters needded. 
+    if(HT_MQTT_Connect(&mqttClient, &mqttNetwork, (char *)addr, HT_MQTT_PORT, HT_MQTT_SEND_TIMEOUT, HT_MQTT_RECEIVE_TIMEOUT,
+                (char *)clientID, (char *)username, (char *)password, HT_MQTT_VERSION, HT_MQTT_KEEP_ALIVE_INTERVAL, mqttSendbuf, HT_MQTT_BUFFER_SIZE, mqttReadbuf, HT_MQTT_BUFFER_SIZE)) {
+        return HT_NOT_CONNECTED;   
+    }
+    return HT_CONNECTED;
+}
+
+static void HT_FSM_Topic_Subscribe(void) {
+    
+    HT_MQTT_Subscribe(&mqttClient, topic_buzzer, QOS0);
+    printf("Subscribe Done!\n");
+}
+
+void HT_FSM_SetSubscribeBuff(MessageData *msg) {
+    memset(subscribed_payload, 0, HT_SUBSCRIBE_BUFF_SIZE);
+    memset(subscribed_topic, 0, strlen((char *)subscribed_topic));
+    memcpy(subscribed_payload, msg->message->payload, msg->message->payloadlen);
+    memcpy(subscribed_topic, msg->topicName->lenstring.data, msg->topicName->lenstring.len);
+}
+
+// para manter a conexão MQTT ativa
+void HT_Yield_Task(void *arg) {
+    while (1) {
+        int rc = MQTTYield(&mqttClient, 100); // 100ms para evitar uso excessivo da CPU
+
+        if (rc != 0) {
+            printf("MQTT Disconnected,Trying to reconnect...\n");
+            // Tentar reconectar indefinidamente
+            while (HT_FSM_MQTTConnect() == HT_NOT_CONNECTED) {
+                vTaskDelay(pdMS_TO_TICKS(3000)); // espera 3s antes de tentar de novo
+                printf("Retrying MQTT connection...\n");
+            }
+
+            HT_FSM_Topic_Subscribe(); // Reinscreve após reconectar
+            printf("MQTT Reconnected!\n");
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(100)); // um pequeno delay para não travar CPU
+    }
+}
+
+/*===========================================================
+FIM - Funções para uso do MQTT
+=============================================================*/
 
 //DEVE SER EXECUTADO PRIMEIRO PARA INICIAR A REDE NB-IoT E EM SEGUIDA DO O MQTT
 
@@ -298,99 +395,6 @@ void NbiotMqttInit(void *arg){
 
 }
 
-
-void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uint32_t len, enum QoS qos, uint8_t retained, uint16_t id, uint8_t dup)
-{
-    MQTTMessage message;
-
-    message.qos = qos;
-    message.retained = retained;
-    message.id = id;
-    message.dup = dup;
-    message.payload = payload;
-    message.payloadlen = len;
-
-    MQTTPublish(mqtt_client, topic, &message);
-}
-
-
-
-void HT_MQTT_SubscribeCallback(MessageData *msg) {
-    printf("Subscribe recebido: %s\n", msg->message->payload);
-
-    subscribe_callback = 1;
-    HT_FSM_SetSubscribeBuff(msg);
-
-    memset(msg->message->payload, 0, msg->message->payloadlen);
-}
-
-void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos) {
-    MQTTSubscribe(mqtt_client, (const char *)topic, qos, HT_MQTT_SubscribeCallback);
-}
-
-
-/*------MQTT-----*/
-static MQTTClient mqttClient;
-static Network mqttNetwork;
-
-//Buffer that will be published.
-static uint8_t mqttSendbuf[HT_MQTT_BUFFER_SIZE] = {0};
-static uint8_t mqttReadbuf[HT_MQTT_BUFFER_SIZE] = {0};
-
-static const char clientID[] = {"SIP_HTNB32L-XXX"};
-static const char username[] = {""};
-static const char password[] = {""};
-
-//MQTT broker host address
-static const char addr[] = {"test.mosquitto.org"};
-
-// MQTT Topics to subscribe
-char topic_buzzer[] = {"hana/smartdoor/buzzer"};
-
-// MQTT Topics to Publish
-char topic_light[] = {"hana/smartdoor/light"};
-char topic_door[] = {"hana/smartdoor/door"};
-
-//Buffers
-static uint8_t subscribed_payload[HT_SUBSCRIBE_BUFF_SIZE] = {0}; // PayLoad Recebida
-static uint8_t subscribed_topic[255] = {0};
-volatile MessageData recieved_msg = {0};
-
-
-static void HT_Yield_Task(void);
-
-// para manter a conexão MQTT ativa
-static void HT_Yield_Task(void) {
-    while (1) {
-        // Wait function for 10ms to check if some message arrived in subscribed topic
-        MQTTYield(&mqttClient, 10);
-    }
-}
-
-
-static HT_ConnectionStatus HT_FSM_MQTTConnect(void) {
-
-    // Connect to MQTT Broker using client, network and parameters needded. 
-    if(HT_MQTT_Connect(&mqttClient, &mqttNetwork, (char *)addr, HT_MQTT_PORT, HT_MQTT_SEND_TIMEOUT, HT_MQTT_RECEIVE_TIMEOUT,
-                (char *)clientID, (char *)username, (char *)password, HT_MQTT_VERSION, HT_MQTT_KEEP_ALIVE_INTERVAL, mqttSendbuf, HT_MQTT_BUFFER_SIZE, mqttReadbuf, HT_MQTT_BUFFER_SIZE)) {
-        return HT_NOT_CONNECTED;   
-    }
-    return HT_CONNECTED;
-}
-
-static void HT_FSM_Topic_Subscribe(void) {
-    
-    HT_MQTT_Subscribe(&mqttClient, topic_buzzer, QOS0);
-    printf("Subscribe Done!\n");
-}
-
-void HT_FSM_SetSubscribeBuff(MessageData *msg) {
-    memset(subscribed_payload, 0, HT_SUBSCRIBE_BUFF_SIZE);
-    memset(subscribed_topic, 0, strlen((char *)subscribed_topic));
-    memcpy(subscribed_payload, msg->message->payload, msg->message->payloadlen);
-    memcpy(subscribed_topic, msg->topicName->lenstring.data, msg->topicName->lenstring.len);
-}
-
 //Chama as Tasks
 void HT_Fsm(void) {
 
@@ -402,9 +406,7 @@ void HT_Fsm(void) {
     printf("MQTT Connection Success!\n");
     
     HT_FSM_Topic_Subscribe();
-
-    HT_Yield_Task();
-
+    xTaskCreate(HT_Yield_Task, "MQTT_Yield",configMINIMAL_STACK_SIZE, NULL, 2, NULL);
 }
 
 

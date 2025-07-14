@@ -205,4 +205,3 @@ static void lightSensor_automaticResolutionSet(uint16_t meter_value)
     lightSensor_mode(current_mode);
   }
 }
-

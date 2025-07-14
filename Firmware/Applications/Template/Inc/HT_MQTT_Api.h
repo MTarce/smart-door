@@ -44,7 +44,7 @@
 
 #define MQTT_TLS_ENABLE 0
 
-#define MQTT_GENERAL_TIMEOUT 60000
+#define MQTT_GENERAL_TIMEOUT 300000
 
 /* Defines  ------------------------------------------------------------------*/
 #define HT_MQTT_KEEP_ALIVE_INTERVAL 240                   /**</ Keep alive interval in ms. */
@@ -56,8 +56,8 @@
 #define HT_MQTT_PORT   1883                               /**</ MQTT TCP port. */
 #endif
 
-#define HT_MQTT_SEND_TIMEOUT 60000                        /**</ MQTT TX timeout. */
-#define HT_MQTT_RECEIVE_TIMEOUT   60000                   /**</ MQTT RX timeout. */
+#define HT_MQTT_SEND_TIMEOUT      300000                  /**</ MQTT TX timeout. */
+#define HT_MQTT_RECEIVE_TIMEOUT   300000                  /**</ MQTT RX timeout. */
 #define HT_MQTT_BUFFER_SIZE 1024                          /**</ Maximum MQTT buffer size. */
 #define HT_SUBSCRIBE_BUFF_SIZE  6                         /**</ Maximum buffer size to received from MQTT subscribe. */
 
@@ -162,6 +162,10 @@ void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos);
 void HT_FSM_SetSubscribeBuff(MessageData *msg);
 void HT_Fsm(void);
 void NbiotMqttInit(void *arg);
+
+extern MQTTClient mqttClient;
+extern char topic_door[];
+extern char topic_light[];
 
 #endif /* __HT_MQTT_API_H__ */
 

@@ -1,4 +1,5 @@
 #include "ReedSwitch.h"
+#include "HT_MQTT_Api.h"
 
 #include <stdio.h>
 
@@ -53,10 +54,12 @@ uint8_t ChangeState(void)
     {
         if (estadoAnterior == 0 && estadoAtual == 1)
         {
+            HT_MQTT_Publish(&mqttClient, topic_door,(uint8_t*)"OPEN", strlen("OPEN"), QOS0, 0, 0, 0);
             printf("OPEN\n");
         }
         else if (estadoAnterior == 1 && estadoAtual == 0)
         {
+            HT_MQTT_Publish(&mqttClient, topic_door,(uint8_t*)"CLOSE", strlen("CLOSE"), QOS0, 0, 0, 0);
             printf("CLOSE\n");
         }
         estadoAnterior = estadoAtual;

@@ -1,11 +1,11 @@
 /*
 
-           _           _       _  _    ___  
-          | |         | |     | || |  / _ \ 
+           _           _       _  _    ___
+          | |         | |     | || |  / _ \
           | |     __ _| |__   | || |_| | | |
           | |    / _` | '_ \  |__   _| | | |
           | |___| (_| | |_) |    | |_| |_| |
-          |______\__,_|_.__/     |_(_)\___/  
+          |______\__,_|_.__/     |_(_)\___/
  =================== Lab 4.0 =====================
 
  Copyright (c) 2025 Laboratório 4.0 - Projeto Educacional
@@ -49,3 +49,11 @@
 #include "netmgr.h"
 #include <stdio.h>
 #include "cmsis_os2.h"
+
+#define LUX_TRESHOLD 500
+
+typedef enum
+{
+    LAMP_OFF = 0,
+    LAMP_ON = 1
+} LampState;

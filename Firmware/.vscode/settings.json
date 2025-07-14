@@ -46,7 +46,8 @@
         "bh1750fvi.h": "c",
         "task.h": "c",
         "driver_i2c.h": "c",
-        "reedswitch.h": "c"
+        "reedswitch.h": "c",
+        "mqttclient.h": "c"
     },
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/sources/poky/bitbake/lib",

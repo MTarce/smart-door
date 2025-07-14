@@ -3,7 +3,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-
 /*BH1750FVI C Driver*/
 /*Reza Ebrahimi - https://github.com/ebrezadev"*/
 /*Version 1.0*/
