@@ -47,7 +47,9 @@
         "task.h": "c",
         "driver_i2c.h": "c",
         "reedswitch.h": "c",
-        "mqttclient.h": "c"
+        "mqttclient.h": "c",
+        "ht_gpio_qcx212.h": "c",
+        "queue.h": "c"
     },
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/sources/poky/bitbake/lib",

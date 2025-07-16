@@ -19,13 +19,11 @@
 void ReedSwitchInit(void)
 {
     GPIO_InitType GPIO_InitStruct = {0};
-    GPIO_InitStruct.af = PAD_MuxAlt0;
+    GPIO_InitStruct.af = REED_SWITCH_PAD_ALT_FUNC;
     GPIO_InitStruct.pad_id = REED_SWITCH_PAD_ID;
     GPIO_InitStruct.gpio_pin = REED_SWITCH_PIN;
     GPIO_InitStruct.pin_direction = GPIO_DirectionInput;
-    GPIO_InitStruct.pull = PAD_InternalPullUp;
     GPIO_InitStruct.instance = REED_SWITCH_INSTANCE;
-    GPIO_InitStruct.interrupt_config = GPIO_InterruptDisabled;
 
     HT_GPIO_Init(&GPIO_InitStruct);
 }

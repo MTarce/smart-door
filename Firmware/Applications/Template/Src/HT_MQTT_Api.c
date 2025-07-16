@@ -221,21 +221,11 @@ void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uin
     MQTTPublish(mqtt_client, topic, &message);
 }
 
+QueueHandle_t buzzerQueue;
 
-void HT_MQTT_SubscribeCallback(MessageData *msg) {
-    printf("Subscribe recebido: %s\n", msg->message->payload);
-
-    subscribe_callback = 1;
-    HT_FSM_SetSubscribeBuff(msg);
-
-    memset(msg->message->payload, 0, msg->message->payloadlen);
-}
-
-void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos) {
-    MQTTSubscribe(mqtt_client, (const char *)topic, qos, HT_MQTT_SubscribeCallback);
-}
 
 void HT_Yield_Task(void *arg);
+uint8_t comando = 0;
 
 /*------MQTT-----*/
 MQTTClient mqttClient;
@@ -279,6 +269,32 @@ static void HT_FSM_Topic_Subscribe(void) {
     HT_MQTT_Subscribe(&mqttClient, topic_buzzer, QOS0);
     printf("Subscribe Done!\n");
 }
+
+void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos) {
+    MQTTSubscribe(mqtt_client, (const char *)topic, qos, HT_MQTT_SubscribeCallback);
+}
+
+void HT_MQTT_SubscribeCallback(MessageData *msg) {
+    printf("Subscribe recebido: %s\n", msg->message->payload);
+
+    subscribe_callback = 1;
+    HT_FSM_SetSubscribeBuff(msg);
+
+    // 1º Verificar se é o tópico
+    // 2º Verificar se a mensagem recebida é ON
+    if (strncmp((char *)msg->topicName->lenstring.data, topic_buzzer, msg->topicName->lenstring.len) == 0) {
+
+        if (strncmp((char *)msg->message->payload, "ON", msg->message->payloadlen) == 0) {
+            comando = 1;
+            xQueueSend(buzzerQueue, &comando, 0);
+        } else if (strncmp((char *)msg->message->payload, "OFF", msg->message->payloadlen) == 0) {
+            comando = 0;
+            xQueueSend(buzzerQueue, &comando, 0);
+        }
+    }
+    memset(msg->message->payload, 0, msg->message->payloadlen);
+}
+
 
 void HT_FSM_SetSubscribeBuff(MessageData *msg) {
     memset(subscribed_payload, 0, HT_SUBSCRIBE_BUFF_SIZE);

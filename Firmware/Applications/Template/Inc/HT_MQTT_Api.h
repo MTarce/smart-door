@@ -166,6 +166,9 @@ void NbiotMqttInit(void *arg);
 extern MQTTClient mqttClient;
 extern char topic_door[];
 extern char topic_light[];
+extern char topic_buzzer[];
+extern QueueHandle_t buzzerQueue;
+extern uint8_t comando;
 
 #endif /* __HT_MQTT_API_H__ */
 
