@@ -23,8 +23,8 @@ void Buzzer_Task(void *arg);
 static void appInit(void *arg)
 {
     xTaskCreate(NbiotMqttInit, "NbiotMqttInit", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
-    xTaskCreate(BH1750_Task, "BH1750", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
-    xTaskCreate(ReedSwitch_Task, "ReedSwitch", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
+    xTaskCreate(BH1750_Task, "BH1750", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
+    xTaskCreate(ReedSwitch_Task, "ReedSwitch", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
     xTaskCreate(Buzzer_Task, "Buzzer", 512, NULL, 3, NULL);
 }
 
@@ -80,17 +80,20 @@ void BH1750_Task(void *arg)
         // Verificando mudançada de estado
         if (estadoAtual != estadoAnterior)
         {
-            if (estadoAtual == LAMP_ON)
+            if (mqttClient.isconnected)
             {
-                printf("LÂMPADA ACESA\n");
-                HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"ON", strlen("ON"), QOS0, 0, 0, 0);
+                if (estadoAtual == LAMP_ON)
+                {
+                    printf("LÂMPADA ACESA\n");
+                    HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"ON", strlen("ON"), QOS0, 0, 0, 0);
+                }
+                else
+                {
+                    printf("LÂMPADA APAGADA\n");
+                    HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"OFF", strlen("OFF"), QOS0, 0, 0, 0);
+                }
+                estadoAnterior = estadoAtual;
             }
-            else
-            {
-                printf("LÂMPADA APAGADA\n");
-                HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"OFF", strlen("OFF"), QOS0, 0, 0, 0);
-            }
-            estadoAnterior = estadoAtual;
         }
         vTaskDelay(pdMS_TO_TICKS(500));
     }
@@ -119,7 +122,7 @@ void Buzzer_Task(void *arg)
 
     while (1)
     {
-         if (xQueueReceive(buzzerQueue, &comando, 0) == pdTRUE)
+        if (xQueueReceive(buzzerQueue, &comando, 0) == pdTRUE)
         {
             buzzer_enabled = comando; // 1 = ON, 0 = OFF
         }
