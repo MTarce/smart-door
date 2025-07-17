@@ -84,13 +84,11 @@ void BH1750_Task(void *arg)
             {
                 printf("LÂMPADA ACESA\n");
                 HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"ON", strlen("ON"), QOS0, 0, 0, 0);
-                HT_MQTT_Publish(&mqttClient, topic_buzzer, (uint8_t *)"ON", strlen("ON"), QOS0, 0, 0, 0);
             }
             else
             {
                 printf("LÂMPADA APAGADA\n");
                 HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"OFF", strlen("OFF"), QOS0, 0, 0, 0);
-                HT_MQTT_Publish(&mqttClient, topic_buzzer, (uint8_t *)"OFF", strlen("OFF"), QOS0, 0, 0, 0);
             }
             estadoAnterior = estadoAtual;
         }
