@@ -240,7 +240,7 @@ static const char username[] = {""};
 static const char password[] = {""};
 
 //MQTT broker host address
-static const char addr[] = {"131.255.82.115"};
+static const char addr[] = {"test.mosquitto.org"};
 
 // MQTT Topics to subscribe
 char topic_buzzer[] = {"hana/mesanino/smartdoor/buzzer"};

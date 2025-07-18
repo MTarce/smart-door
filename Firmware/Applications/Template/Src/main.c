@@ -80,20 +80,17 @@ void BH1750_Task(void *arg)
         // Verificando mudançada de estado
         if (estadoAtual != estadoAnterior)
         {
-            if (mqttClient.isconnected)
+            if (estadoAtual == LAMP_ON)
             {
-                if (estadoAtual == LAMP_ON)
-                {
-                    printf("LÂMPADA ACESA\n");
-                    HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"ON", strlen("ON"), QOS0, 0, 0, 0);
-                }
-                else
-                {
-                    printf("LÂMPADA APAGADA\n");
-                    HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"OFF", strlen("OFF"), QOS0, 0, 0, 0);
-                }
-                estadoAnterior = estadoAtual;
+                printf("LÂMPADA ACESA\n");
+                HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"ON", strlen("ON"), QOS0, 0, 0, 0);
             }
+            else
+            {
+                printf("LÂMPADA APAGADA\n");
+                HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"OFF", strlen("OFF"), QOS0, 0, 0, 0);
+            }
+            estadoAnterior = estadoAtual;
         }
         vTaskDelay(pdMS_TO_TICKS(500));
     }
