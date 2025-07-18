@@ -162,6 +162,7 @@ void HT_MQTT_Subscribe(MQTTClient *mqtt_client, char *topic, enum QoS qos);
 void HT_FSM_SetSubscribeBuff(MessageData *msg);
 void HT_Fsm(void);
 void NbiotMqttInit(void *arg);
+void LedVerdeInit(void);
 
 extern MQTTClient mqttClient;
 extern char topic_door[];

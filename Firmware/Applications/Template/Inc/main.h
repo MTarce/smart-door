@@ -49,6 +49,7 @@
 #include "netmgr.h"
 #include <stdio.h>
 #include "cmsis_os2.h"
+#include "HT_gpio_qcx212.h"
 
 #define LUX_TRESHOLD 500
 
