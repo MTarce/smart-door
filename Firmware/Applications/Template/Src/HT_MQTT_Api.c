@@ -6,6 +6,13 @@
 #define LED_VERDE_PAD_ID 14                /**</ LED VERDE Pad ID. */
 #define LED_VERDE_PAD_ALT_FUNC PAD_MuxAlt0 /**</ Button pin alternate function. */
 
+// GPIO05 - LED AZUL - PUBLISH
+#define LED_AZUL_INSTANCE 0               /**</ LED AZUL pin instance. */
+#define LED_AZUL_PIN 5                    /**</ LED AZUL pin number. */
+#define LED_AZUL_PAD_ID 16                /**</ LED AZUL Pad ID. */
+#define LED_AZUL_PAD_ALT_FUNC PAD_MuxAlt0 /**</ Button pin alternate function. */
+
+
 void LedVerdeInit(void)
 {
     GPIO_InitType GPIO_InitStruct = {0};
@@ -14,9 +21,22 @@ void LedVerdeInit(void)
     GPIO_InitStruct.gpio_pin = LED_VERDE_PIN;
     GPIO_InitStruct.pin_direction = GPIO_DirectionOutput;
     GPIO_InitStruct.instance = LED_VERDE_INSTANCE;
-    GPIO_InitStruct.init_output = 1;
+    GPIO_InitStruct.init_output = 0;
     HT_GPIO_Init(&GPIO_InitStruct);
 }
+
+void LedAzulInit(void)
+{
+    GPIO_InitType GPIO_InitStruct = {0};
+    GPIO_InitStruct.af = LED_AZUL_PAD_ALT_FUNC;
+    GPIO_InitStruct.pad_id = LED_AZUL_PAD_ID;
+    GPIO_InitStruct.gpio_pin = LED_AZUL_PIN;
+    GPIO_InitStruct.pin_direction = GPIO_DirectionOutput;
+    GPIO_InitStruct.instance = LED_AZUL_INSTANCE;
+    GPIO_InitStruct.init_output = 0;
+    HT_GPIO_Init(&GPIO_InitStruct);
+}
+
 
 /*===========================================================
 Inicio - Configuração de rede 
@@ -227,6 +247,7 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
 
 void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uint32_t len, enum QoS qos, uint8_t retained, uint16_t id, uint8_t dup)
 {
+    HT_GPIO_WritePin(LED_AZUL_PIN,LED_AZUL_INSTANCE,1);
     MQTTMessage message;
 
     message.qos = qos;
@@ -237,6 +258,7 @@ void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uin
     message.payloadlen = len;
 
     MQTTPublish(mqtt_client, topic, &message);
+    HT_GPIO_WritePin(LED_AZUL_PIN,LED_AZUL_INSTANCE,0);
 }
 
 QueueHandle_t buzzerQueue;
@@ -328,16 +350,16 @@ void HT_Yield_Task(void *arg) {
 
         if (rc != 0) {
             printf("MQTT Disconnected,Trying to reconnect...\n");
-            HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,1);
+            HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,0);
             // Tentar reconectar indefinidamente
-            while (HT_FSM_MQTTConnect() == HT_NOT_CONNECTED) {
+            if (HT_FSM_MQTTConnect() == HT_NOT_CONNECTED) {
                 vTaskDelay(pdMS_TO_TICKS(3000)); // espera 3s antes de tentar de novo
                 printf("Retrying MQTT connection...\n");
             }
 
             HT_FSM_Topic_Subscribe(); // Reinscreve após reconectar
             printf("MQTT Reconnected!\n");
-            HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,0);
+            HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,1);
 
         }
 
@@ -434,7 +456,6 @@ void NbiotMqttInit(void *arg){
 
 //Chama as Tasks
 void HT_Fsm(void) {
-    LedVerdeInit();
 
     // Initialize MQTT Client and Connect to MQTT Broker defined in global variables
     if(HT_FSM_MQTTConnect() == HT_NOT_CONNECTED) {
@@ -443,7 +464,7 @@ void HT_Fsm(void) {
     else
     {
         printf("MQTT Connection Success!\n");
-        HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,0);
+        HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,1);
     }
     HT_FSM_Topic_Subscribe();
     xTaskCreate(HT_Yield_Task, "MQTT_Yield",configMINIMAL_STACK_SIZE, NULL, 2, NULL);

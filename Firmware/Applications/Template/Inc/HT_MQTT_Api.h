@@ -163,6 +163,7 @@ void HT_FSM_SetSubscribeBuff(MessageData *msg);
 void HT_Fsm(void);
 void NbiotMqttInit(void *arg);
 void LedVerdeInit(void);
+void LedAzulInit(void);
 
 extern MQTTClient mqttClient;
 extern char topic_door[];

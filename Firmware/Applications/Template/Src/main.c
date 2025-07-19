@@ -23,9 +23,9 @@ void Buzzer_Task(void *arg);
 static void appInit(void *arg)
 {
     xTaskCreate(NbiotMqttInit, "NbiotMqttInit", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
-    xTaskCreate(BH1750_Task, "BH1750", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
-    xTaskCreate(ReedSwitch_Task, "ReedSwitch", configMINIMAL_STACK_SIZE, NULL, 3, NULL);
-    xTaskCreate(Buzzer_Task, "Buzzer", 512, NULL, 3, NULL);
+    xTaskCreate(BH1750_Task, "BH1750", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
+    xTaskCreate(ReedSwitch_Task, "ReedSwitch", configMINIMAL_STACK_SIZE, NULL, 4, NULL);
+    xTaskCreate(Buzzer_Task, "Buzzer", 512, NULL, 4, NULL);
 }
 
 /**
@@ -38,6 +38,8 @@ void main_entry(void)
     uint32_t uart_cntrl = (ARM_USART_MODE_ASYNCHRONOUS | ARM_USART_DATA_BITS_8 | ARM_USART_PARITY_NONE |
                            ARM_USART_STOP_BITS_1 | ARM_USART_FLOW_CONTROL_NONE);
     BSP_CommonInit();
+    LedVerdeInit();
+    LedAzulInit();
     HAL_USART_InitPrint(&huart1, GPR_UART1ClkSel_26M, uart_cntrl, 115200);
 
     osKernelInitialize();
