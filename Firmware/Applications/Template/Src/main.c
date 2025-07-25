@@ -49,8 +49,7 @@ void main_entry(void)
     {
         osKernelStart();
     }
-    while (1)
-        ;
+    while (1);
 }
 
 /*=========================================
@@ -67,8 +66,6 @@ void BH1750_Task(void *arg)
     while (1)
     {
         uint16_t lux = lightSensor_meter();
-        // printf("Luminosidade: %u lux\n", lux);
-
         // Determino o estado atual da lampada com base no treshold
         if (lux > LUX_TRESHOLD)
         {
@@ -84,12 +81,10 @@ void BH1750_Task(void *arg)
         {
             if (estadoAtual == LAMP_ON)
             {
-                printf("LÂMPADA ACESA\n");
                 HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"ON", strlen("ON"), QOS0, 0, 0, 0);
             }
             else
             {
-                printf("LÂMPADA APAGADA\n");
                 HT_MQTT_Publish(&mqttClient, topic_light, (uint8_t *)"OFF", strlen("OFF"), QOS0, 0, 0, 0);
             }
             estadoAnterior = estadoAtual;

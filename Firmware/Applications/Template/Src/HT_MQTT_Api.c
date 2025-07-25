@@ -21,7 +21,7 @@ void LedVerdeInit(void)
     GPIO_InitStruct.gpio_pin = LED_VERDE_PIN;
     GPIO_InitStruct.pin_direction = GPIO_DirectionOutput;
     GPIO_InitStruct.instance = LED_VERDE_INSTANCE;
-    GPIO_InitStruct.init_output = 0;
+    GPIO_InitStruct.init_output = 1;
     HT_GPIO_Init(&GPIO_InitStruct);
 }
 
@@ -33,7 +33,7 @@ void LedAzulInit(void)
     GPIO_InitStruct.gpio_pin = LED_AZUL_PIN;
     GPIO_InitStruct.pin_direction = GPIO_DirectionOutput;
     GPIO_InitStruct.instance = LED_AZUL_INSTANCE;
-    GPIO_InitStruct.init_output = 0;
+    GPIO_InitStruct.init_output = 1;
     HT_GPIO_Init(&GPIO_InitStruct);
 }
 
@@ -247,7 +247,7 @@ uint8_t HT_MQTT_Connect(MQTTClient *mqtt_client, Network *mqtt_network, char *ad
 
 void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uint32_t len, enum QoS qos, uint8_t retained, uint16_t id, uint8_t dup)
 {
-    HT_GPIO_WritePin(LED_AZUL_PIN,LED_AZUL_INSTANCE,1);
+    HT_GPIO_WritePin(LED_AZUL_PIN,LED_AZUL_INSTANCE,0);
     MQTTMessage message;
 
     message.qos = qos;
@@ -258,7 +258,7 @@ void HT_MQTT_Publish(MQTTClient *mqtt_client, char *topic, uint8_t *payload, uin
     message.payloadlen = len;
 
     MQTTPublish(mqtt_client, topic, &message);
-    HT_GPIO_WritePin(LED_AZUL_PIN,LED_AZUL_INSTANCE,0);
+    HT_GPIO_WritePin(LED_AZUL_PIN,LED_AZUL_INSTANCE,1);
 }
 
 QueueHandle_t buzzerQueue;
@@ -280,7 +280,7 @@ static const char username[] = {""};
 static const char password[] = {""};
 
 //MQTT broker host address
-static const char addr[] = {"test.mosquitto.org"};
+static const char addr[] = {"131.255.82.115"};
 
 // MQTT Topics to subscribe
 char topic_buzzer[] = {"hana/mesanino/smartdoor/buzzer"};
@@ -291,18 +291,7 @@ char topic_door[] = {"hana/mesanino/smartdoor/door"};
 
 //Buffers
 static uint8_t subscribed_payload[HT_SUBSCRIBE_BUFF_SIZE] = {0}; // PayLoad Recebida
-static uint8_t subscribed_topic[255] = {0};
-volatile MessageData recieved_msg = {0};
-
-static HT_ConnectionStatus HT_FSM_MQTTConnect(void) {
-
-    // Connect to MQTT Broker using client, network and parameters needded. 
-    if(HT_MQTT_Connect(&mqttClient, &mqttNetwork, (char *)addr, HT_MQTT_PORT, HT_MQTT_SEND_TIMEOUT, HT_MQTT_RECEIVE_TIMEOUT,
-                (char *)clientID, (char *)username, (char *)password, HT_MQTT_VERSION, HT_MQTT_KEEP_ALIVE_INTERVAL, mqttSendbuf, HT_MQTT_BUFFER_SIZE, mqttReadbuf, HT_MQTT_BUFFER_SIZE)) {
-        return HT_NOT_CONNECTED;   
-    }
-    return HT_CONNECTED;
-}
+static uint8_t subscribed_topic[255] = {0}; 
 
 static void HT_FSM_Topic_Subscribe(void) {
     
@@ -350,7 +339,7 @@ void HT_Yield_Task(void *arg) {
 
         if (rc != 0) {
             printf("MQTT Disconnected,Trying to reconnect...\n");
-            HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,0);
+            HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,1);
             // Tentar reconectar indefinidamente
             if (HT_FSM_MQTTConnect() == HT_NOT_CONNECTED) {
                 vTaskDelay(pdMS_TO_TICKS(3000)); // espera 3s antes de tentar de novo
@@ -359,7 +348,7 @@ void HT_Yield_Task(void *arg) {
 
             HT_FSM_Topic_Subscribe(); // Reinscreve após reconectar
             printf("MQTT Reconnected!\n");
-            HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,1);
+            HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,0);
 
         }
 
@@ -464,7 +453,7 @@ void HT_Fsm(void) {
     else
     {
         printf("MQTT Connection Success!\n");
-        HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,1);
+        HT_GPIO_WritePin(LED_VERDE_PIN,LED_VERDE_INSTANCE,0);
     }
     HT_FSM_Topic_Subscribe();
     xTaskCreate(HT_Yield_Task, "MQTT_Yield",configMINIMAL_STACK_SIZE, NULL, 2, NULL);
