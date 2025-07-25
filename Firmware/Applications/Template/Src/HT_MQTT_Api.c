@@ -324,6 +324,16 @@ void HT_MQTT_SubscribeCallback(MessageData *msg) {
     memset(msg->message->payload, 0, msg->message->payloadlen);
 }
 
+static HT_ConnectionStatus HT_FSM_MQTTConnect(void) {
+
+    // Connect to MQTT Broker using client, network and parameters needded. 
+    if(HT_MQTT_Connect(&mqttClient, &mqttNetwork, (char *)addr, HT_MQTT_PORT, HT_MQTT_SEND_TIMEOUT, HT_MQTT_RECEIVE_TIMEOUT,
+                (char *)clientID, (char *)username, (char *)password, HT_MQTT_VERSION, HT_MQTT_KEEP_ALIVE_INTERVAL, mqttSendbuf, HT_MQTT_BUFFER_SIZE, mqttReadbuf, HT_MQTT_BUFFER_SIZE)) {
+        return HT_NOT_CONNECTED;   
+    }
+
+    return HT_CONNECTED;
+}
 
 void HT_FSM_SetSubscribeBuff(MessageData *msg) {
     memset(subscribed_payload, 0, HT_SUBSCRIBE_BUFF_SIZE);
